@@ -108,13 +108,69 @@ class GroqStrategy:
                 stream=True,
                 stop=None,
             )
-            content = []
-            for chunk in completion:
-                content.append(chunk.choices[0].delta.content or "")
-            return _parse_json_response("".join(content))
+
+            content_parts = []
+
+            # completion may be an iterator (stream) yielding dict-like or attr objects,
+            # or a single response object. Be defensive when extracting text.
+            try:
+                for chunk in completion:
+                    part = ""
+                    # dict-like chunk
+                    if isinstance(chunk, dict):
+                        try:
+                            ch = chunk.get("choices", [])
+                            if ch:
+                                delta = ch[0].get("delta")
+                                if isinstance(delta, dict):
+                                    part = delta.get("content") or ""
+                                else:
+                                    part = ch[0].get("text") or ch[0].get("message", {}).get("content", "")
+                            else:
+                                part = chunk.get("text") or ""
+                        except Exception:
+                            part = ""
+                    else:
+                        # object-like chunk
+                        try:
+                            # try attribute access (choices[0].delta.content)
+                            part = getattr(getattr(chunk.choices[0], "delta", None), "content", None) or getattr(chunk.choices[0], "text", "") or ""
+                        except Exception:
+                            part = ""
+
+                    content_parts.append(part or "")
+            except TypeError:
+                # Not iterable — perhaps a single response object
+                try:
+                    if isinstance(completion, dict):
+                        # non-stream dict
+                        if "choices" in completion and completion["choices"]:
+                            # try common shapes
+                            c0 = completion["choices"][0]
+                            text = c0.get("message", {}).get("content") or c0.get("text") or ""
+                            content_parts.append(text)
+                    else:
+                        # object with .choices
+                        try:
+                            text = getattr(getattr(completion.choices[0], "message", None), "content", None) or getattr(completion.choices[0], "text", "")
+                            content_parts.append(text or "")
+                        except Exception:
+                            pass
+                except Exception as e:
+                    print("Groq: unable to extract text from non-iterable completion:", e)
+
+            joined = "".join(content_parts)
+            # attempt to parse JSON block from the joined text; if parsing fails,
+            # assume model returned raw README markdown and return it under 'readme'.
+            try:
+                parsed = _parse_json_response(joined)
+                return parsed
+            except HTTPException:
+                return {"readme": joined}
         except HTTPException:
             raise
         except Exception as exc:
+            print("GroqStrategy.generate error:", exc)
             raise HTTPException(
                 status_code=500,
                 detail=f"Error de Groq: {exc}",
