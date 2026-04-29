@@ -201,17 +201,35 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _aiModel,
-                              items: const [
+                              items: [
                                 DropdownMenuItem(
                                     value: 'gemini', child: Text('Gemini')),
+                                DropdownMenuItem(value: 'groq', child: Text('Groq')),
                                 DropdownMenuItem(
-                                  value: 'groq', child: Text('Groq')),
-                                DropdownMenuItem(
-                                    value: 'claude', child: Text('Claude')),
+                                  value: 'claude',
+                                  child: Row(
+                                    children: const [
+                                      Icon(Icons.lock, size: 14),
+                                      SizedBox(width: 8),
+                                      Text('Claude (blocked)'),
+                                    ],
+                                  ),
+                                ),
                               ],
                               onChanged: _loading
                                   ? null
-                                  : (v) => setState(() => _aiModel = v!),
+                                  : (v) {
+                                      if (v == 'claude') {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              'Claude no està disponible.'),
+                                          duration: Duration(seconds: 2),
+                                        ));
+                                        return;
+                                      }
+                                      setState(() => _aiModel = v!);
+                                    },
                               style: const TextStyle(
                                   fontSize: 13,
                                   color: kOnSurface,

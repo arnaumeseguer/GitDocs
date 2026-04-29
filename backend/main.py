@@ -152,6 +152,8 @@ class ClaudeStrategy:
 _strategies = {
     "gemini": GeminiStrategy(gemini_client),
     "groq": GroqStrategy(groq_client),
+    # backwards-compatible alias: some deployments or clients used "grok"
+    "grok": GroqStrategy(groq_client),
     "claude": ClaudeStrategy(anthropic_client),
 }
 
@@ -225,7 +227,9 @@ async def generate(req: GenerateRequest):
     if strategy is None:
         raise HTTPException(
             status_code=400,
-            detail=f"Model desconegut: '{req.ai_model}'. Usa 'gemini', 'groq' o 'claude'.",
+            detail=(
+                f"Model desconegut: '{req.ai_model}'. Usa 'gemini', 'groq' (o 'grok') o 'claude'."
+            ),
         )
 
     result = strategy.generate(req.prompt)
