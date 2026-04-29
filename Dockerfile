@@ -1,7 +1,7 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
-COPY frontend/pubspec.yaml frontend/pubspec.lock frontend/
+COPY frontend/pubspec.yaml frontend/
 WORKDIR /app/frontend
 RUN flutter pub get
 COPY frontend/ /app/frontend/
