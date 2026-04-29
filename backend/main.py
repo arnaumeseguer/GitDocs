@@ -8,6 +8,9 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from strategies import GeminiStrategy, GrokStrategy, ClaudeStrategy
+from strategies.base import LLMContext
+
 load_dotenv()
 
 app = FastAPI(title="GitDocs API")
@@ -29,6 +32,14 @@ grok_client = (
     OpenAI(api_key=grok_key, base_url="https://api.x.ai/v1") if grok_key else None
 )
 anthropic_client = anthropic.Anthropic(api_key=anthropic_key) if anthropic_key else None
+
+# ── Strategy instances ─────────────────────────────────────────────────────────
+
+_strategies = {
+    "gemini": GeminiStrategy(gemini_client),
+    "grok": GrokStrategy(grok_client),
+    "claude": ClaudeStrategy(anthropic_client),
+}
 
 GITHUB_HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -96,31 +107,29 @@ class GenerateRequest(BaseModel):
 
 @app.post("/api/generate")
 async def generate(req: GenerateRequest):
-    if req.ai_model == "grok":
-        if not grok_client:
-            raise HTTPException(status_code=500, detail="GROK_API_KEY not set")
-        response = grok_client.chat.completions.create(
-            model="grok-3",
-            messages=[{"role": "user", "content": req.prompt}],
+    strategy = _strategies.get(req.ai_model)
+    if strategy is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model desconegut: '{req.ai_model}'. Usa 'gemini', 'grok' o 'claude'.",
         )
-        return {"readme": response.choices[0].message.content}
-    elif req.ai_model == "claude":
-        if not anthropic_client:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
-        response = anthropic_client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=4096,
-            messages=[{"role": "user", "content": req.prompt}],
+
+    ctx = LLMContext(strategy)
+    result = ctx.generate(req.prompt)
+
+    # Ensure the 'readme' key is always present
+    if "readme" not in result:
+        raise HTTPException(
+            status_code=500,
+            detail="La resposta de la IA no conté el camp 'readme'.",
         )
-        return {"readme": response.content[0].text}
-    else:
-        if not gemini_client:
-            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
-        response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=req.prompt,
-        )
-        return {"readme": response.text}
+
+    return result
+
+
+@app.get("/")
+async def root():
+    return {"message": "GitDocs API running", "status": "ok"}
 
 
 @app.get("/health")
