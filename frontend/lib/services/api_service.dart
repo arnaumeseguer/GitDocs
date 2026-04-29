@@ -80,14 +80,26 @@ class ApiService {
       }),
     );
     if (res.statusCode != 200) {
-      final body = jsonDecode(res.body);
-      throw Exception(body['detail'] ?? 'API error ${res.statusCode}');
+      try {
+        final body = jsonDecode(res.body);
+        throw Exception(body['detail'] ?? 'API error ${res.statusCode}');
+      } catch (_) {
+        throw Exception('API error ${res.statusCode}');
+      }
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (!data.containsKey('readme')) {
-      throw Exception('La resposta de la IA no conté el camp readme.');
-    }
-    return data;
+
+    // The backend now returns raw markdown (text/markdown). Try to parse
+    // JSON first (for backward compatibility); otherwise return the body
+    // as the `readme` field.
+    try {
+      final maybeJson = jsonDecode(res.body);
+      if (maybeJson is Map<String, dynamic> && maybeJson.containsKey('readme')) {
+        return maybeJson;
+      }
+    } catch (_) {}
+
+    // Not JSON — assume raw markdown
+    return {'readme': res.body};
   }
 
   static String buildPrompt({

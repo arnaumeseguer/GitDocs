@@ -178,8 +178,8 @@ const kModels = [
   AiModel(
       id: 'claude',
       name: 'Claude Haiku',
-      sub: 'Anthropic · Actiu',
-      available: true),
+      sub: 'Anthropic · Bloquejat',
+      available: false),
   AiModel(
       id: 'llama',
       name: 'Llama 3',

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai as google_genai
@@ -241,7 +241,19 @@ async def generate(req: GenerateRequest):
             detail="La resposta de la IA no conté el camp 'readme'.",
         )
 
-    return result
+    # Always return raw README markdown (text/markdown)
+    if "readme" not in result:
+        raise HTTPException(
+            status_code=500,
+            detail="La resposta de la IA no conté el camp 'readme'.",
+        )
+
+    readme_text = result.get("readme", "")
+    return Response(
+        content=readme_text,
+        media_type="text/markdown",
+        headers={"Content-Disposition": "attachment; filename=README.md"},
+    )
 
 
 @app.get("/")
