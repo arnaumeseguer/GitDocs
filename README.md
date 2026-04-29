@@ -96,6 +96,16 @@ Missing keys result in a **503 Service Unavailable** response.
 - **ApiService** calls `/api/generate` with selected model
 - **ResultScreen** displays parsed response fields: `title`, `description`, `key_features`, `tech_stack`, `complexity`
 
+### Railway Deployment
+
+The repository is ready for automatic deploys on Railway after each push:
+
+- `Dockerfile` builds the Flutter web frontend and serves it on the Railway port.
+- `frontend/pubspec.yaml` restores the Flutter project so the web build works from source.
+- `frontend/lib/services/api_service.dart` reads the backend URL at compile time and falls back to `https://gitdocs.up.railway.app` in release builds.
+
+If the backend host changes, update the default API URL and push again; Railway will rebuild automatically.
+
 ### Why Strategy Pattern?
 
 ✅ **Loose Coupling**: Adding a new LLM only requires a new Strategy class  

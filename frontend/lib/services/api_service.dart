@@ -3,8 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
-final _backendUrl =
-    kReleaseMode ? 'https://gitdocs.up.railway.app' : 'http://localhost:8000';
+final _backendUrl = const String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: kReleaseMode
+      ? 'https://gitdocs.up.railway.app'
+      : 'http://localhost:8000',
+);
 
 class ApiService {
   static Future<Map<String, dynamic>> fetchRepo(

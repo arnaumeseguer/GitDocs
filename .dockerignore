@@ -1,0 +1,7 @@
+.git
+.env
+backend/
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins-dependencies
+*.pdf
