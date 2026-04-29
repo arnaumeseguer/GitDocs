@@ -1,6 +1,6 @@
 # GitDocs
 
-Auto-generate professional READMEs for GitHub repositories using AI (Gemini, Grok, or Claude).
+Auto-generate professional READMEs for GitHub repositories using AI (Gemini, Groq, or Claude).
 
 ---
 
@@ -31,9 +31,9 @@ GitDocs implements the **Strategy Pattern** to abstract different AI service int
          │   └──────────────────────┘
          │
          ├─→ ┌──────────────────────┐
-         │   │ GrokStrategy         │
-         │   │ - Model: Grok-3      │
-         │   │ - Client: xAI API    │
+         │   │ GroqStrategy         │
+         │   │ - Model: GPT-OSS 120B│
+         │   │ - Client: Groq API   │
          │   └──────────────────────┘
          │
          └─→ ┌──────────────────────┐
@@ -52,7 +52,7 @@ GitDocs implements the **Strategy Pattern** to abstract different AI service int
 
 **2. Concrete Strategies** (`backend/strategies/`)
 - **GeminiStrategy**: Calls Google Gemini API via `google.genai` SDK
-- **GrokStrategy**: Calls xAI Grok via OpenAI-compatible API endpoint
+- **GroqStrategy**: Calls Groq with the `openai/gpt-oss-120b` model
 - **ClaudeStrategy**: Calls Anthropic Claude via official `anthropic` SDK
 
 Each strategy:
@@ -66,7 +66,7 @@ Frontend (Dart)
     ↓
 /api/generate (FastAPI endpoint)
     ↓
-GenerateRequest (ai_model: "gemini"|"grok"|"claude")
+GenerateRequest (ai_model: "gemini"|"groq"|"claude")
     ↓
 Select Strategy from registry _strategies
     ↓
@@ -84,7 +84,7 @@ Frontend displays title, description, features, tech_stack
 Add API keys to `.env`:
 ```bash
 GEMINI_API_KEY=your_key_here
-GROK_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
 ANTHROPIC_API_KEY=your_key_here
 ```
 
@@ -92,7 +92,7 @@ Missing keys result in a **503 Service Unavailable** response.
 
 ### Frontend Integration
 
-- **NewReadmeScreen** (`frontend/lib/screens/new_readme_screen.dart`): Allows users to select `aiModel` (gemini, grok, claude)
+- **NewReadmeScreen** (`frontend/lib/screens/new_readme_screen.dart`): Allows users to select `aiModel` (gemini, groq, claude)
 - **ApiService** calls `/api/generate` with selected model
 - **ResultScreen** displays parsed response fields: `title`, `description`, `key_features`, `tech_stack`, `complexity`
 

@@ -31,12 +31,13 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
   String _error = '';
   Map<String, dynamic>? _repoPreview;
   late AppSettings _local;
-  String _aiModel = 'gemini';
+  String _aiModel = 'groq';
 
   @override
   void initState() {
     super.initState();
     _local = widget.settings;
+    _aiModel = widget.settings.model;
     _urlCtrl.addListener(_onUrlChanged);
   }
 
@@ -204,7 +205,7 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
                                 DropdownMenuItem(
                                     value: 'gemini', child: Text('Gemini')),
                                 DropdownMenuItem(
-                                    value: 'grok', child: Text('Grok')),
+                                  value: 'groq', child: Text('Groq')),
                                 DropdownMenuItem(
                                     value: 'claude', child: Text('Claude')),
                               ],

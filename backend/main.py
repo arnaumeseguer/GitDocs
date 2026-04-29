@@ -2,14 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai as google_genai
-from openai import OpenAI
+from groq import Groq
 import anthropic
+import json
 import os
 import requests
+import re
 from dotenv import load_dotenv
-
-from strategies import GeminiStrategy, GrokStrategy, ClaudeStrategy
-from strategies.base import LLMContext
 
 load_dotenv()
 
@@ -23,21 +22,136 @@ app.add_middleware(
 )
 
 gemini_key = os.environ.get("GEMINI_API_KEY", "")
-grok_key = os.environ.get("GROK_API_KEY", "")
+groq_key = os.environ.get("GROQ_API_KEY", "")
 anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
 github_token = os.environ.get("GITHUB_TOKEN", "")
 
 gemini_client = google_genai.Client(api_key=gemini_key) if gemini_key else None
-grok_client = (
-    OpenAI(api_key=grok_key, base_url="https://api.x.ai/v1") if grok_key else None
-)
+groq_client = Groq(api_key=groq_key) if groq_key else None
 anthropic_client = anthropic.Anthropic(api_key=anthropic_key) if anthropic_key else None
 
-# ── Strategy instances ─────────────────────────────────────────────────────────
+
+def _parse_json_response(text: str) -> dict:
+    """Extract and parse a JSON object from an LLM response string."""
+    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+
+    raise HTTPException(
+        status_code=500,
+        detail="La IA no ha retornat una resposta JSON vàlida.",
+    )
+
+
+class GeminiStrategy:
+    MODEL = "gemini-2.5-flash-lite"
+
+    def __init__(self, client):
+        self._client = client
+
+    def generate(self, prompt: str) -> dict:
+        if not self._client:
+            raise HTTPException(
+                status_code=503,
+                detail="GEMINI_API_KEY no configurat al servidor.",
+            )
+        try:
+            response = self._client.models.generate_content(
+                model=self.MODEL,
+                contents=prompt,
+            )
+            return _parse_json_response(response.text)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error de Gemini: {exc}",
+            ) from exc
+
+
+class GroqStrategy:
+    MODEL = "openai/gpt-oss-120b"
+
+    def __init__(self, client):
+        self._client = client
+
+    def generate(self, prompt: str) -> dict:
+        if not self._client:
+            raise HTTPException(
+                status_code=503,
+                detail="GROQ_API_KEY no configurat al servidor.",
+            )
+        try:
+            completion = self._client.chat.completions.create(
+                model=self.MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=1,
+                max_completion_tokens=8192,
+                top_p=1,
+                reasoning_effort="medium",
+                stream=True,
+                stop=None,
+            )
+            content = []
+            for chunk in completion:
+                content.append(chunk.choices[0].delta.content or "")
+            return _parse_json_response("".join(content))
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error de Groq: {exc}",
+            ) from exc
+
+
+class ClaudeStrategy:
+    MODEL = "claude-haiku-4-5"
+
+    def __init__(self, client):
+        self._client = client
+
+    def generate(self, prompt: str) -> dict:
+        if not self._client:
+            raise HTTPException(
+                status_code=503,
+                detail="ANTHROPIC_API_KEY no configurat al servidor.",
+            )
+        try:
+            response = self._client.messages.create(
+                model=self.MODEL,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return _parse_json_response(response.content[0].text)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error de Claude: {exc}",
+            ) from exc
+
 
 _strategies = {
     "gemini": GeminiStrategy(gemini_client),
-    "grok": GrokStrategy(grok_client),
+    "groq": GroqStrategy(groq_client),
     "claude": ClaudeStrategy(anthropic_client),
 }
 
@@ -102,7 +216,7 @@ class GenerateRequest(BaseModel):
     repoData: dict = {}
     langData: dict = {}
     settings: dict = {}
-    ai_model: str = "gemini"
+    ai_model: str = "groq"
 
 
 @app.post("/api/generate")
@@ -111,11 +225,10 @@ async def generate(req: GenerateRequest):
     if strategy is None:
         raise HTTPException(
             status_code=400,
-            detail=f"Model desconegut: '{req.ai_model}'. Usa 'gemini', 'grok' o 'claude'.",
+            detail=f"Model desconegut: '{req.ai_model}'. Usa 'gemini', 'groq' o 'claude'.",
         )
 
-    ctx = LLMContext(strategy)
-    result = ctx.generate(req.prompt)
+    result = strategy.generate(req.prompt)
 
     # Ensure the 'readme' key is always present
     if "readme" not in result:
@@ -138,6 +251,6 @@ async def health():
         "status": "ok",
         "github_token": bool(github_token),
         "gemini_key": bool(gemini_key),
-        "grok_key": bool(grok_key),
+        "groq_key": bool(groq_key),
         "anthropic_key": bool(anthropic_key),
     }
