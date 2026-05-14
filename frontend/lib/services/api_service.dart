@@ -1,53 +1,180 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../models/models.dart';
 
-/// Service — ApiService
-/// Calls the Express backend. Never accessed by Views directly.
+const _backendUrl = 'http://localhost:8000';
+
 class ApiService {
-  /// In production the Flutter build is served by the same Express server,
-  /// so we use a relative path. In debug we point to localhost:3000.
-  static String get _base {
-    if (kReleaseMode) return '';
-    return const String.fromEnvironment('API_BASE',
-        defaultValue: 'http://localhost:3000');
-  }
-
-  Future<Map<String, dynamic>> _post(
-      String path, Map<String, dynamic> body) async {
-    final res = await http.post(
-      Uri.parse('${_base}$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode != 200) {
-      throw Exception(data['error'] ?? 'HTTP ${res.statusCode}');
+  static Future<Map<String, dynamic>> fetchRepo(
+      String owner, String repo) async {
+    final res = await http.get(
+        Uri.parse('$_backendUrl/github/repo/$owner/$repo'));
+    if (res.statusCode == 404) {
+      throw Exception('Repositorio no encontrado o privado.');
     }
-    return data;
+    if (res.statusCode == 429) {
+      throw Exception('Límit de GitHub API superat. Afegeix un GITHUB_TOKEN al .env');
+    }
+    if (res.statusCode != 200) {
+      throw Exception('Error GitHub: ${res.statusCode}');
+    }
+    return jsonDecode(res.body);
   }
 
-  /// Fetches GitHub repo metadata, file tree and key file contents.
-  Future<Map<String, dynamic>> fetchRepo({
-    required String owner,
-    required String repo,
-    String? token,
-  }) =>
-      _post('/api/github/repo', {'owner': owner, 'repo': repo, 'token': token});
+  static Future<Map<String, dynamic>> fetchLanguages(
+      String owner, String repo) async {
+    try {
+      final res = await http.get(
+          Uri.parse('$_backendUrl/github/repo/$owner/$repo/languages'));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {}
+    return {};
+  }
 
-  /// Sends a chat request to the configured AI provider.
-  Future<String> chat({
-    required List<Map<String, String>> messages,
-    required String apiKey,
-    required String provider,
-    required String model,
+  static Future<List<dynamic>> fetchContents(
+      String owner, String repo) async {
+    try {
+      final res = await http.get(
+          Uri.parse('$_backendUrl/github/repo/$owner/$repo/contents'));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<String> fetchReadme(String owner, String repo) async {
+    try {
+      final res = await http.get(
+          Uri.parse('$_backendUrl/github/repo/$owner/$repo/readme'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['content'] == null) return '';
+        final encoded = (data['content'] as String).replaceAll('\n', '');
+        return utf8.decode(base64Decode(encoded));
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  static Future<({String readme, String modelUsed})> generateReadme({
+    required String prompt,
+    required Map<String, dynamic> repoData,
+    required Map<String, dynamic> langData,
+    required AppSettings settings,
+    required String aiModel,
+    bool noFallback = false,
   }) async {
-    final data = await _post('/api/ai/chat', {
-      'messages': messages,
-      'apiKey':   apiKey,
-      'provider': provider,
-      'model':    model,
-    });
-    return data['content'] as String;
+    final res = await http.post(
+      Uri.parse('$_backendUrl/api/generate'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'prompt': prompt,
+        'repoData': repoData,
+        'langData': langData,
+        'settings': settings.toJson(),
+        'ai_model': aiModel,
+        'no_fallback': noFallback,
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('API error ${res.statusCode}');
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (
+      readme: body['readme'] as String,
+      modelUsed: (body['model_used'] as String?) ?? aiModel,
+    );
   }
+
+  static String buildPrompt({
+    required Map<String, dynamic> repoData,
+    required Map<String, dynamic> langData,
+    required List<dynamic> contents,
+    required String existingReadme,
+    required AppSettings settings,
+  }) {
+    final langs = langData.keys.take(8).join(', ').isEmpty
+        ? 'No detectado'
+        : langData.keys.take(8).join(', ');
+    final files =
+        contents.map((f) => f['name'] as String? ?? '').join(', ');
+
+    const toneMap = {
+      'professional': 'profesional y técnico',
+      'playful': 'amigable y entretenido',
+      'academic': 'formal y académico',
+    };
+    const lengthMap = {
+      'concise': 'conciso (máx 200 palabras)',
+      'balanced': 'equilibrado (300-500 palabras)',
+      'detailed': 'detallado y completo (600+ palabras)',
+    };
+    const emojiMap = {
+      'none': 'sin emojis',
+      'minimal': 'emojis mínimos (solo en títulos)',
+      'vibrant': 'emojis en cada sección',
+    };
+    const templateMap = {
+      'standard': 'estándar',
+      'minimal': 'minimalista',
+      'library': 'librería/SDK',
+      'cli': 'herramienta CLI',
+      'saas': 'SaaS/App Web',
+      'research': 'investigación',
+    };
+    const langOut = {
+      'en': 'English',
+      'es': 'Spanish',
+      'ca': 'Catalan',
+      'fr': 'French',
+      'pt': 'Portuguese',
+      'de': 'German',
+      'ja': 'Japanese',
+    };
+
+    final readmeSection = existingReadme.isNotEmpty
+        ? '\nEXISTING README (for reference/improvement):\n${existingReadme.substring(0, existingReadme.length.clamp(0, 1500))}'
+        : '';
+
+    return '''You are a professional README writer. Generate a high-quality README.md for this GitHub repository.
+
+REPOSITORY INFO:
+- Name: ${repoData['full_name']}
+- Description: ${repoData['description'] ?? 'No description provided'}
+- Stars: ${repoData['stargazers_count']} | Forks: ${repoData['forks_count']} | Language: ${repoData['language'] ?? 'N/A'}
+- Topics: ${((repoData['topics'] as List?)?.join(', ')) ?? 'none'}
+- License: ${repoData['license']?['name'] ?? 'None'}
+- Languages used: $langs
+- Root files: $files
+- Created: ${(repoData['created_at'] as String?)?.split('T')[0]} | Updated: ${(repoData['updated_at'] as String?)?.split('T')[0]}
+$readmeSection
+
+GENERATION SETTINGS:
+- Language: Write the README in ${langOut[settings.language] ?? 'English'}
+- Tone: ${toneMap[settings.tone] ?? 'profesional y técnico'}
+- Length: ${lengthMap[settings.length] ?? 'equilibrado'}
+- Emoji usage: ${emojiMap[settings.emoji] ?? 'mínimos'}
+- Template style: ${templateMap[settings.template] ?? 'estándar'}
+
+INSTRUCTIONS:
+- Start with the repo name as H1 (with a fitting emoji if emoji setting allows)
+- Include relevant badges (shields.io) for: build status, version, license, language
+- Write a clear, compelling description paragraph
+- Include sections appropriate for the template style (Installation, Usage, Features, Contributing, License, etc.)
+- For code examples, use proper fenced code blocks with language identifiers
+- Make it genuinely useful, not generic boilerplate
+- Do NOT add placeholder text like "[Your description here]"
+- Base all content on the actual repo data provided
+
+Return ONLY the raw markdown content, no explanations.''';
+  }
+}
+
+Map<String, String>? parseGithubUrl(String url) {
+  final match =
+      RegExp(r'github\.com/([^/]+)/([^/\s?#]+)').firstMatch(url);
+  if (match == null) return null;
+  return {
+    'owner': match.group(1)!,
+    'repo': match.group(2)!.replaceAll(RegExp(r'\.git$'), ''),
+  };
 }

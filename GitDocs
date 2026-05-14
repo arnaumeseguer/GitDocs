@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+_start() {
+  echo "[GitDocs] Arrancant backend..."
+  (
+    cd "$SCRIPT_DIR/backend"
+    ./gitdocs/bin/python3 -m uvicorn main:app --reload --port 8000
+  ) &
+  BACK_PID=$!
+
+  echo "[GitDocs] Arrancant frontend..."
+  (
+    cd "$SCRIPT_DIR/frontend"
+    flutter run -d web-server --web-port 8080 --web-hostname localhost
+  ) &
+  FRONT_PID=$!
+
+  echo ""
+  echo "  Backend   →  http://localhost:8000"
+  echo "  Frontend  →  http://localhost:8080"
+  echo ""
+  echo "  Ctrl+C per aturar."
+
+  _cleanup() {
+    echo ""
+    echo "[GitDocs] Aturant processos..."
+    kill "$BACK_PID" "$FRONT_PID" 2>/dev/null || true
+    wait "$BACK_PID" "$FRONT_PID" 2>/dev/null || true
+    echo "[GitDocs] Aturat."
+  }
+  trap _cleanup INT TERM EXIT
+  wait
+}
+
+_stop() {
+  local stopped=0
+  if pkill -f "uvicorn main:app" 2>/dev/null; then
+    echo "[GitDocs] Backend aturat."
+    stopped=1
+  fi
+  if pkill -f "flutter run" 2>/dev/null; then
+    echo "[GitDocs] Frontend aturat."
+    stopped=1
+  fi
+  [[ $stopped -eq 0 ]] && echo "[GitDocs] Cap procés en execució."
+}
+
+case "${1:-}" in
+  start)  _start ;;
+  stop)   _stop  ;;
+  *)
+    echo "Ús: GitDocs <comanda>"
+    echo ""
+    echo "  start   Engega el backend i el frontend"
+    echo "  stop    Atura ambdós processos"
+    ;;
+esac

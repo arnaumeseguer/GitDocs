@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitDocs — README Generator</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+    integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+    integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+    integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #1E293B;
+      --primary-dim: #334155;
+      --primary-light: #475569;
+      --accent: #6366f1;
+      --accent-dim: #4f46e5;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-low: #f1f5f9;
+      --surface-high: #e2e8f0;
+      --on-surface: #0f172a;
+      --on-surface-muted: #64748b;
+      --on-surface-faint: #94a3b8;
+      --island-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.07), 0 1px 4px rgba(15, 23, 42, 0.04);
+      --island-shadow-hover: 0 8px 32px -4px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--on-surface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-headline {
+      font-family: 'Manrope', sans-serif;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--surface-high);
+      border-radius: 10px;
+    }
+
+    /* Island card */
+    .island {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--island-shadow);
+    }
+
+    .island-sm {
+      border-radius: 12px;
+    }
+
+    /* Button primary */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dim) 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.25);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Button secondary */
+    .btn-secondary {
+      background: var(--surface-low);
+      color: var(--on-surface);
+      border: none;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-high);
+    }
+
+    /* Input */
+    .input-field {
+      width: 100%;
+      background: var(--surface-low);
+      border: 1.5px solid transparent;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--on-surface);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-field:focus {
+      background: var(--surface);
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
+    }
+
+    .input-field::placeholder {
+      color: var(--on-surface-faint);
+    }
+
+    /* Chip */
+    .chip {
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .chip-active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .chip-inactive {
+      background: var(--surface-low);
+      color: var(--on-surface-muted);
+    }
+
+    .chip-inactive:hover {
+      background: var(--surface-high);
+    }
+
+    /* Nav item */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-decoration: none;
+      color: var(--on-surface-muted);
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--surface-low);
+      color: var(--on-surface);
+    }
+
+    .nav-item.active {
+      background: var(--surface-low);
+      color: var(--on-surface);
+      font-weight: 600;
+    }
+
+    .nav-item .icon {
+      font-size: 20px !important;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      height: 100vh;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px;
+      border-right: 1px solid var(--surface-high);
+    }
+
+    /* Markdown preview styles */
+    .md-preview {
+      line-height: 1.75;
+      color: var(--on-surface);
+    }
+
+    .md-preview h1 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      margin-top: 28px;
+      color: var(--on-surface);
+    }
+
+    .md-preview h2 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      margin-top: 24px;
+      color: var(--on-surface);
+    }
+
+    .md-preview h3 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      margin-top: 18px;
+    }
+
+    .md-preview p {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .md-preview ul,
+    .md-preview ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .md-preview li {
+      margin-bottom: 4px;
+    }
+
+    .md-preview code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-low);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #6366f1;
+    }
+
+    .md-preview pre {
+      background: var(--on-surface);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+    }
+
+    .md-preview pre code {
+      background: transparent;
+      color: #e2e8f0;
+      padding: 0;
+      font-size: 12.5px;
+    }
+
+    .md-preview blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 14px;
+      color: var(--on-surface-muted);
+      margin-bottom: 12px;
+    }
+
+    .md-preview table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+
+    .md-preview th {
+      background: var(--surface-low);
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .md-preview td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--surface-high);
+    }
+
+    .md-preview a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .md-preview img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .md-preview hr {
+      border: none;
+      border-top: 1px solid var(--surface-high);
+      margin: 20px 0;
+    }
+
+    /* Badge */
+    .badge {
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge-indigo {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent);
+    }
+
+    .badge-green {
+      background: rgba(34, 197, 94, 0.1);
+      color: #16a34a;
+    }
+
+    .badge-slate {
+      background: var(--surface-low);
+      color: var(--on-surface-muted);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-track {
+      width: 44px;
+      height: 24px;
+      background: var(--surface-high);
+      border-radius: 9999px;
+      transition: background 0.2s;
+    }
+
+    .toggle input:checked+.toggle-track {
+      background: var(--primary);
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 9999px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle input:checked~.toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    /* Range input */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 9999px;
+      background: var(--surface-high);
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .fade-up {
+      animation: fadeUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+    }
+
+    .pulse {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .shimmer-line {
+      background: linear-gradient(90deg, var(--surface-low) 25%, var(--surface-high) 50%, var(--surface-low) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    /* Select */
+    select.input-field {
+      cursor: pointer;
+    }
+
+    /* Model card */
+    .model-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: var(--surface-low);
+      cursor: pointer;
+      transition: all 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .model-card:hover {
+      background: var(--surface-high);
+    }
+
+    .model-card.selected {
+      border-color: var(--primary);
+      background: white;
+    }
+
+    /* History card */
+    .history-card {
+      padding: 16px 20px;
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--island-shadow);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-card:hover {
+      box-shadow: var(--island-shadow-hover);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ── Design tokens ──────────────────────────────────────────────────────────
+    const MODELS = [
+      { id: 'claude', name: 'Claude Haiku', sub: 'Anthropic · Activo', available: true },
+      { id: 'gpt4', name: 'GPT-4 Turbo', sub: 'OpenAI · Próximamente', available: false },
+      { id: 'grok', name: 'Grok-1', sub: 'X.AI · Próximamente', available: false },
+      { id: 'llama', name: 'Llama 3', sub: 'Meta · Próximamente', available: false },
+    ];
+
+    const TEMPLATES = [
+      { id: 'standard', icon: 'description', label: 'Estándar', desc: 'README completo con todas las secciones esenciales.' },
+      { id: 'minimal', icon: 'minimize', label: 'Minimalista', desc: 'Solo lo esencial: qué es, cómo instalarlo y usarlo.' },
+      { id: 'library', icon: 'library_books', label: 'Librería / SDK', desc: 'API reference, ejemplos de código, badges de versión.' },
+      { id: 'cli', icon: 'terminal', label: 'CLI Tool', desc: 'Comandos, flags, ejemplos de uso en terminal.' },
+      { id: 'saas', icon: 'cloud', label: 'SaaS / App Web', desc: 'Demo gif, features, pricing, screenshots.' },
+      { id: 'research', icon: 'science', label: 'Investigación', desc: 'Abstract, metodología, citas, resultados.' },
+    ];
+
+    // ── Icon helper ────────────────────────────────────────────────────────────
+    const Icon = ({ name, size = 20, fill = 0, style = {} }) => (
+      <span className="material-symbols-outlined" style={{
+        fontSize: size, fontVariationSettings: `'FILL' ${fill}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
+        lineHeight: 1, userSelect: 'none', ...style
+      }}>{name}</span>
+    );
+
+    // ── Sidebar ────────────────────────────────────────────────────────────────
+    function Sidebar({ page, setPage, history }) {
+      const nav = [
+        { id: 'new', icon: 'add_circle', label: 'Nuevo README' },
+        { id: 'history', icon: 'history', label: 'Historial' },
+        { id: 'templates', icon: 'grid_view', label: 'Plantillas' },
+        { id: 'settings', icon: 'settings', label: 'Configuración' },
+      ];
+      return (
+        <aside className="sidebar">
+          {/* Logo */}
+          <div style={{ padding: '4px 6px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #1E293B, #334155)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="auto_awesome" size={18} style={{ color: 'white' }} />
+            </div>
+            <div>
+              <div className="font-headline" style={{ fontSize: 16, fontWeight: 800, color: 'var(--on-surface)', letterSpacing: '-0.02em' }}>GitDocs</div>
+              <div style={{ fontSize: 10, color: 'var(--on-surface-faint)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>v0.5 · Beta</div>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {nav.map(n => (
+              <button key={n.id} className={`nav-item ${page === n.id ? 'active' : ''}`} onClick={() => setPage(n.id)}>
+                <Icon name={n.icon} size={20} className="icon" />
+                <span>{n.label}</span>
+                {n.id === 'history' && history.length > 0 && (
+                  <span style={{ marginLeft: 'auto', background: 'var(--surface-high)', borderRadius: 9999, padding: '1px 7px', fontSize: 11, fontWeight: 700, color: 'var(--on-surface-muted)' }}>{history.length}</span>
+                )}
+              </button>
+            ))}
+          </nav>
+
+          {/* Upgrade */}
+          <div style={{ marginTop: 'auto' }}>
+            <div className="island" style={{ padding: '14px 16px', marginBottom: 14, background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: 'var(--on-surface)' }}>Upgrade a Pro</div>
+              <div style={{ fontSize: 11, color: 'var(--on-surface-muted)', lineHeight: 1.5, marginBottom: 10 }}>Modelos ilimitados, exportación avanzada y más.</div>
+              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '8px 16px', fontSize: 12 }}>
+                Mejorar plan
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9999, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 13, fontWeight: 700 }}>U</div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Usuario</div>
+                <div style={{ fontSize: 11, color: 'var(--on-surface-muted)' }}>Plan Free</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    // ── New README Screen ──────────────────────────────────────────────────────
+    function NewReadme({ settings, onResult, onNavigate }) {
+      const [url, setUrl] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [loadMsg, setLoadMsg] = useState('');
+      const [error, setError] = useState('');
+      const [repoPreview, setRepoPreview] = useState(null);
+      const [localSettings, setLocalSettings] = useState({
+        length: settings.length,
+        tone: settings.tone,
+        emoji: settings.emoji,
+        template: settings.template,
+        language: settings.language,
+      });
+
+      const parseGithubUrl = (url) => {
+        const match = url.match(/github\.com\/([^\/]+)\/([^\/\s?#]+)/);
+        return match ? { owner: match[1], repo: match[2].replace(/\.git$/, '') } : null;
+      };
+
+      const fetchRepoPreview = async (repoUrl) => {
+        const parsed = parseGithubUrl(repoUrl);
+        if (!parsed) return;
+        try {
+          const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`);
+          if (res.ok) {
+            const data = await res.json();
+            setRepoPreview(data);
+          }
+        } catch { }
+      };
+
+      useEffect(() => {
+        setRepoPreview(null);
+        const t = setTimeout(() => { if (url) fetchRepoPreview(url); }, 600);
+        return () => clearTimeout(t);
+      }, [url]);
+
+      const generate = async () => {
+        setError('');
+        const parsed = parseGithubUrl(url);
+        if (!parsed) { setError('Ingresa una URL válida de GitHub (ej: https://github.com/usuario/repo)'); return; }
+
+        setLoading(true);
+        let repoData = {}, langData = {}, contentsData = [], readmeContent = '';
+
+        try {
+          setLoadMsg('Obteniendo información del repositorio…');
+          const [repoRes, langRes, contentsRes] = await Promise.all([
+            fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`),
+            fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/languages`),
+            fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents`),
+          ]);
+          if (!repoRes.ok) throw new Error('Repositorio no encontrado o privado.');
+          repoData = await repoRes.json();
+          if (langRes.ok) langData = await langRes.json();
+          if (contentsRes.ok) contentsData = await contentsRes.json();
+
+          // Try to fetch existing README for context
+          try {
+            const readmeRes = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/readme`);
+            if (readmeRes.ok) {
+              const readmeJson = await readmeRes.json();
+              readmeContent = atob(readmeJson.content.replace(/\n/g, ''));
+            }
+          } catch { }
+
+        } catch (e) {
+          setError(e.message || 'Error al acceder al repositorio.');
+          setLoading(false);
+          return;
+        }
+
+        setLoadMsg('Generando README con IA…');
+
+        const langs = Object.keys(langData).slice(0, 8).join(', ') || 'No detectado';
+        const files = Array.isArray(contentsData) ? contentsData.map(f => f.name).join(', ') : '';
+        const toneMap = { professional: 'profesional y técnico', playful: 'amigable y entretenido', academic: 'formal y académico' };
+        const lengthMap = { concise: 'conciso (máx 200 palabras)', balanced: 'equilibrado (300-500 palabras)', detailed: 'detallado y completo (600+ palabras)' };
+        const emojiMap = { none: 'sin emojis', minimal: 'emojis mínimos (solo en títulos)', vibrant: 'emojis en cada sección' };
+        const templateMap = { standard: 'estándar', minimal: 'minimalista', library: 'librería/SDK', cli: 'herramienta CLI', saas: 'SaaS/App Web', research: 'investigación' };
+        const langOut = localSettings.language === 'en' ? 'English' : localSettings.language === 'es' ? 'Spanish' : localSettings.language === 'fr' ? 'French' : localSettings.language === 'pt' ? 'Portuguese' : 'English';
+
+        const prompt = `You are a professional README writer. Generate a high-quality README.md for this GitHub repository.
+
+REPOSITORY INFO:
+- Name: ${repoData.full_name}
+- Description: ${repoData.description || 'No description provided'}
+- Stars: ${repoData.stargazers_count} | Forks: ${repoData.forks_count} | Language: ${repoData.language || 'N/A'}
+- Topics: ${(repoData.topics || []).join(', ') || 'none'}
+- License: ${repoData.license?.name || 'None'}
+- Languages used: ${langs}
+- Root files: ${files}
+- Created: ${repoData.created_at?.split('T')[0]} | Updated: ${repoData.updated_at?.split('T')[0]}
+${readmeContent ? `\nEXISTING README (for reference/improvement):\n${readmeContent.substring(0, 1500)}` : ''}
+
+GENERATION SETTINGS:
+- Language: Write the README in ${langOut}
+- Tone: ${toneMap[localSettings.tone] || 'professional'}
+- Length: ${lengthMap[localSettings.length] || 'balanced'}
+- Emoji usage: ${emojiMap[localSettings.emoji] || 'minimal'}
+- Template style: ${templateMap[localSettings.template] || 'standard'}
+
+INSTRUCTIONS:
+- Start with the repo name as H1 (with a fitting emoji if emoji setting allows)
+- Include relevant badges (shields.io) for: build status, version, license, language
+- Write a clear, compelling description paragraph
+- Include sections appropriate for the template style (Installation, Usage, Features, Contributing, License, etc.)
+- For code examples, use proper fenced code blocks with language identifiers
+- Make it genuinely useful, not generic boilerplate
+- Do NOT add placeholder text like "[Your description here]"
+- Base all content on the actual repo data provided
+
+Return ONLY the raw markdown content, no explanations.`;
+
+        try {
+          // ─────────────────────────────────────────────────────────────
+          // TODO: Replace this with your own backend call.
+          // Expected: POST /api/generate  →  { readme: "# ..." }
+          // ─────────────────────────────────────────────────────────────
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, repoData, langData, settings: localSettings }),
+          });
+          if (!response.ok) throw new Error('API error ' + response.status);
+          const { readme } = await response.json();
+          // ─────────────────────────────────────────────────────────────
+          onResult({ readme, repoData, langData, settings: { ...localSettings }, url, timestamp: Date.now() });
+        } catch (e) {
+          setError('Error al generar. Verifica que el backend esté activo.');
+        }
+        setLoading(false);
+      };
+
+      const exampleUrls = [
+        'https://github.com/facebook/react',
+        'https://github.com/vercel/next.js',
+        'https://github.com/tailwindlabs/tailwindcss',
+      ];
+
+      return (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+          <div style={{ maxWidth: 760, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ marginBottom: 32 }} className="fade-up">
+              <h2 className="font-headline" style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>Nuevo README</h2>
+              <p style={{ color: 'var(--on-surface-muted)', fontSize: 14 }}>Pega la URL de un repositorio público de GitHub y genera un README profesional con IA.</p>
+            </div>
+
+            {/* URL Input card */}
+            <div className="island fade-up" style={{ padding: '28px 32px', marginBottom: 20, animationDelay: '0.05s' }}>
+              <label className="font-headline" style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: 'block', color: 'var(--on-surface)' }}>
+                URL del Repositorio
+              </label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <Icon name="link" size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--on-surface-faint)' }} />
+                  <input
+                    className="input-field"
+                    style={{ paddingLeft: 42 }}
+                    placeholder="https://github.com/usuario/repositorio"
+                    value={url}
+                    onChange={e => setUrl(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && generate()}
+                  />
+                </div>
+                <button className="btn-primary" onClick={generate} disabled={loading || !url.trim()}>
+                  {loading ? <><Icon name="refresh" size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> Generando…</> : <><Icon name="auto_awesome" size={16} /> Generar</>}
+                </button>
+              </div>
+
+              {/* Repo preview */}
+              {repoPreview && !loading && (
+                <div style={{ marginTop: 14, padding: '12px 14px', background: 'var(--surface-low)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, animation: 'fadeUp 0.2s ease forwards' }}>
+                  <Icon name="folder" size={20} style={{ color: 'var(--accent)' }} />
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{repoPreview.full_name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--on-surface-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{repoPreview.description || 'Sin descripción'}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: 'var(--on-surface-muted)', display: 'flex', alignItems: 'center', gap: 3 }}><Icon name="star" size={14} />{repoPreview.stargazers_count?.toLocaleString()}</span>
+                    {repoPreview.language && <span className="badge badge-indigo">{repoPreview.language}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Examples */}
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, color: 'var(--on-surface-faint)', fontWeight: 500 }}>Ejemplos:</span>
+                {exampleUrls.map(ex => (
+                  <button key={ex} onClick={() => setUrl(ex)} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'JetBrains Mono, monospace' }}>
+                    {ex.replace('https://github.com/', '')}
+                  </button>
+                ))}
+              </div>
+
+              {error && <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.07)', borderRadius: 8, fontSize: 13, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="error" size={16} />{error}</div>}
+            </div>
+
+            {/* Loading state */}
+            {loading && (
+              <div className="island fade-up" style={{ padding: '28px 32px', marginBottom: 20, textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--surface-low)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="auto_awesome" size={22} style={{ color: 'var(--accent)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                  <div>
+                    <div className="font-headline" style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{loadMsg}</div>
+                    <div style={{ fontSize: 13, color: 'var(--on-surface-muted)' }}>Esto puede tomar unos segundos…</div>
+                  </div>
+                  <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {[80, 60, 90, 50].map((w, i) => (
+                      <div key={i} className="shimmer-line" style={{ height: 10, width: `${w}%`, margin: '0 auto' }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Settings row */}
+            {!loading && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, animationDelay: '0.1s' }} className="fade-up">
+                {/* Length + Tone */}
+                <div className="island" style={{ padding: '22px 24px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="segment" size={16} /> Longitud del README
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {[['concise', 'Conciso'], ['balanced', 'Equilibrado'], ['detailed', 'Detallado']].map(([v, l]) => (
+                      <button key={v} className={`chip ${localSettings.length === v ? 'chip-active' : 'chip-inactive'}`} onClick={() => setLocalSettings(s => ({ ...s, length: v }))}>{l}</button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="record_voice_over" size={16} /> Tono
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[['professional', 'Profesional'], ['playful', 'Amigable'], ['academic', 'Académico']].map(([v, l]) => (
+                      <button key={v} className={`chip ${localSettings.tone === v ? 'chip-active' : 'chip-inactive'}`} onClick={() => setLocalSettings(s => ({ ...s, tone: v }))}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Emoji + Template */}
+                <div className="island" style={{ padding: '22px 24px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="mood" size={16} /> Uso de Emojis
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[['none', 'Ninguno'], ['minimal', 'Mínimo'], ['vibrant', 'Vibrante']].map(([v, l]) => (
+                      <button key={v} className={`chip ${localSettings.emoji === v ? 'chip-active' : 'chip-inactive'}`} onClick={() => setLocalSettings(s => ({ ...s, emoji: v }))}>{l}</button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="grid_view" size={16} /> Plantilla
+                  </div>
+                  <select className="input-field" style={{ padding: '8px 12px', fontSize: 12 }} value={localSettings.template} onChange={e => setLocalSettings(s => ({ ...s, template: e.target.value }))}>
+                    {TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Result Screen ──────────────────────────────────────────────────────────
+    function ResultScreen({ result, onBack, onSave }) {
+      const [tab, setTab] = useState('preview');
+      const [copied, setCopied] = useState(false);
+      const [saved, setSaved] = useState(false);
+
+      const download = () => {
+        const blob = new Blob([result.readme], { type: 'text/markdown' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${result.repoData?.name || 'README'}.md`; a.click();
+      };
+
+      const copy = () => {
+        navigator.clipboard.writeText(result.readme).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+      };
+
+      const save = () => {
+        onSave(result);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      };
+
+      const langs = Object.entries(result.langData || {}).sort((a, b) => b[1] - a[1]);
+      const total = langs.reduce((s, [, v]) => s + v, 0);
+
+      return (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+          <div style={{ maxWidth: 900, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }} className="fade-up">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button className="btn-secondary" style={{ padding: '8px 12px' }} onClick={onBack}>
+                  <Icon name="arrow_back" size={16} /> Volver
+                </button>
+                <div>
+                  <h2 className="font-headline" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em' }}>{result.repoData?.full_name || 'README Generado'}</h2>
+                  <div style={{ fontSize: 12, color: 'var(--on-surface-muted)' }}>{new Date(result.timestamp).toLocaleString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" onClick={save} style={{ color: saved ? '#16a34a' : undefined }}>
+                  <Icon name={saved ? 'check_circle' : 'bookmark'} size={15} />{saved ? 'Guardado' : 'Guardar'}
+                </button>
+                <button className="btn-secondary" onClick={copy}>
+                  <Icon name={copied ? 'check' : 'content_copy'} size={15} />{copied ? 'Copiado!' : 'Copiar'}
+                </button>
+                <button className="btn-primary" onClick={download}>
+                  <Icon name="download" size={15} /> Descargar .md
+                </button>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            {result.repoData && (
+              <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }} className="fade-up">
+                {[
+                  { icon: 'star', val: result.repoData.stargazers_count?.toLocaleString(), label: 'Stars' },
+                  { icon: 'fork_right', val: result.repoData.forks_count?.toLocaleString(), label: 'Forks' },
+                  { icon: 'visibility', val: result.repoData.watchers_count?.toLocaleString(), label: 'Watchers' },
+                  { icon: 'bug_report', val: result.repoData.open_issues_count?.toLocaleString(), label: 'Issues' },
+                ].map(s => (
+                  <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--surface)', borderRadius: 10, boxShadow: 'var(--island-shadow)' }}>
+                    <Icon name={s.icon} size={15} style={{ color: 'var(--on-surface-muted)' }} />
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{s.val}</span>
+                    <span style={{ fontSize: 12, color: 'var(--on-surface-muted)' }}>{s.label}</span>
+                  </div>
+                ))}
+                {langs.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--surface)', borderRadius: 10, boxShadow: 'var(--island-shadow)', overflow: 'hidden', maxWidth: 260 }}>
+                    {langs.slice(0, 4).map(([lang, bytes]) => (
+                      <span key={lang} className="badge badge-indigo" style={{ flexShrink: 0 }}>{lang} {Math.round(bytes / total * 100)}%</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab bar */}
+            <div style={{ display: 'flex', gap: 2, marginBottom: 16, background: 'var(--surface-low)', padding: 4, borderRadius: 12, width: 'fit-content' }} className="fade-up">
+              {[['preview', 'Preview'], ['raw', 'Markdown']].map(([id, label]) => (
+                <button key={id} onClick={() => setTab(id)} style={{ padding: '7px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'Inter', transition: 'all 0.15s', background: tab === id ? 'var(--surface)' : 'transparent', color: tab === id ? 'var(--on-surface)' : 'var(--on-surface-muted)', boxShadow: tab === id ? 'var(--island-shadow)' : 'none' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content */}
+            <div className="island fade-up" style={{ padding: '32px 36px', animationDelay: '0.1s' }}>
+              {tab === 'preview' ? (
+                <div className="md-preview" dangerouslySetInnerHTML={{ __html: marked.parse(result.readme || '') }} />
+              ) : (
+                <pre className="mono" style={{ fontSize: 12.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--on-surface)', background: 'none' }}>
+                  {result.readme}
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── History Screen ─────────────────────────────────────────────────────────
+    function HistoryScreen({ history, onOpen, onClear }) {
+      if (history.length === 0) return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, color: 'var(--on-surface-muted)' }}>
+          <Icon name="history" size={40} style={{ color: 'var(--surface-high)' }} />
+          <div className="font-headline" style={{ fontSize: 15, fontWeight: 700 }}>Sin historial aún</div>
+          <div style={{ fontSize: 13 }}>Genera tu primer README para verlo aquí.</div>
+        </div>
+      );
+
+      return (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <div>
+                <h2 className="font-headline" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>Historial</h2>
+                <p style={{ fontSize: 13, color: 'var(--on-surface-muted)' }}>{history.length} README{history.length !== 1 ? 's' : ''} generado{history.length !== 1 ? 's' : ''}</p>
+              </div>
+              <button className="btn-secondary" onClick={onClear} style={{ color: '#dc2626' }}>
+                <Icon name="delete_sweep" size={15} /> Limpiar
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[...history].reverse().map((item, i) => (
+                <div key={item.timestamp} className="history-card fade-up" style={{ animationDelay: `${i * 0.04}s` }} onClick={() => onOpen(item)}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <div className="font-headline" style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.repoData?.full_name || item.url}</div>
+                        {item.repoData?.language && <span className="badge badge-indigo">{item.repoData.language}</span>}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--on-surface-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.repoData?.description || item.url}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, color: 'var(--on-surface-faint)', marginBottom: 4 }}>{new Date(item.timestamp).toLocaleDateString()}</div>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                        <span className="badge badge-slate">{item.settings?.tone || 'professional'}</span>
+                        <span className="badge badge-slate">{item.settings?.template || 'standard'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 12, color: 'var(--on-surface-muted)', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {item.readme?.substring(0, 180)}…
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Templates Screen ───────────────────────────────────────────────────────
+    function TemplatesScreen({ onSelectTemplate }) {
+      return (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div style={{ marginBottom: 28 }}>
+              <h2 className="font-headline" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>Plantillas</h2>
+              <p style={{ fontSize: 13, color: 'var(--on-surface-muted)' }}>Elige la estructura base más adecuada para tu proyecto.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {TEMPLATES.map((t, i) => (
+                <div key={t.id} className="island fade-up" style={{ padding: '22px 24px', cursor: 'pointer', transition: 'all 0.2s', animationDelay: `${i * 0.05}s` }}
+                  onClick={() => onSelectTemplate(t.id)}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--island-shadow-hover)'}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = 'var(--island-shadow)'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-low)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name={t.icon} size={20} style={{ color: 'var(--primary)' }} />
+                    </div>
+                    <div className="font-headline" style={{ fontSize: 15, fontWeight: 700 }}>{t.label}</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface-muted)', lineHeight: 1.5 }}>{t.desc}</div>
+                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', fontSize: 12, fontWeight: 600 }}>
+                    Usar plantilla <Icon name="arrow_forward" size={14} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Settings Screen ────────────────────────────────────────────────────────
+    function SettingsScreen({ settings, setSettings }) {
+      const [saved, setSaved] = useState(false);
+      const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+      return (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+          <div style={{ maxWidth: 740, margin: '0 auto' }}>
+            <div style={{ marginBottom: 28 }} className="fade-up">
+              <h2 className="font-headline" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>Configuración</h2>
+              <p style={{ fontSize: 13, color: 'var(--on-surface-muted)' }}>Parámetros globales aplicados a todas las generaciones.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Language */}
+              <div className="island fade-up" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="language" size={16} /> Idioma de salida
+                </div>
+                <select className="input-field" value={settings.language} onChange={e => setSettings(s => ({ ...s, language: e.target.value }))}>
+                  <option value="en">English (EN)</option>
+                  <option value="es">Español (ES)</option>
+                  <option value="fr">Français (FR)</option>
+                  <option value="pt">Português (PT)</option>
+                  <option value="de">Deutsch (DE)</option>
+                  <option value="ja">日本語 (JA)</option>
+                </select>
+              </div>
+
+              {/* Length */}
+              <div className="island fade-up" style={{ padding: '24px', animationDelay: '0.05s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="segment" size={16} /> Longitud
+                  </div>
+                  <span className="badge badge-indigo" style={{ textTransform: 'capitalize' }}>{settings.length}</span>
+                </div>
+                <input type="range" min="0" max="2" step="1" value={['concise', 'balanced', 'detailed'].indexOf(settings.length)} onChange={e => setSettings(s => ({ ...s, length: ['concise', 'balanced', 'detailed'][+e.target.value] }))} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, color: 'var(--on-surface-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 6 }}>
+                  <span>Conciso</span><span>Equilibrado</span><span>Detallado</span>
+                </div>
+              </div>
+
+              {/* AI Model */}
+              <div className="island fade-up" style={{ padding: '24px', animationDelay: '0.05s' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="smart_toy" size={16} /> Modelo de IA
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {MODELS.map(m => (
+                    <button key={m.id} className={`model-card ${settings.model === m.id ? 'selected' : ''}`} disabled={!m.available} onClick={() => m.available && setSettings(s => ({ ...s, model: m.id }))}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: m.available ? 'var(--on-surface)' : 'var(--on-surface-faint)' }}>{m.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--on-surface-faint)' }}>{m.sub}</div>
+                      </div>
+                      {!m.available ? <Icon name="lock" size={16} style={{ color: 'var(--on-surface-faint)' }} /> :
+                        settings.model === m.id ? <Icon name="check_circle" size={16} fill={1} style={{ color: 'var(--primary)' }} /> :
+                          <Icon name="radio_button_unchecked" size={16} style={{ color: 'var(--on-surface-faint)' }} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div className="island fade-up" style={{ padding: '24px', animationDelay: '0.1s' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="tune" size={16} /> Opciones avanzadas
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {[
+                    { key: 'includeLicense', label: 'Incluir licencia', sub: 'Auto-detecta el archivo LICENSE' },
+                    { key: 'includeBadges', label: 'Generar badges', sub: 'Shields.io para versión, lenguaje, etc.' },
+                    { key: 'includeContributing', label: 'Sección Contributing', sub: 'Guía de contribución estándar' },
+                  ].map(opt => (
+                    <div key={opt.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{opt.label}</div>
+                        <div style={{ fontSize: 11, color: 'var(--on-surface-muted)' }}>{opt.sub}</div>
+                      </div>
+                      <label className="toggle">
+                        <input type="checkbox" checked={settings[opt.key] ?? true} onChange={e => setSettings(s => ({ ...s, [opt.key]: e.target.checked }))} />
+                        <div className="toggle-track" /><div className="toggle-thumb" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tone + Emoji */}
+              <div className="island fade-up" style={{ padding: '24px', animationDelay: '0.1s' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="record_voice_over" size={16} /> Tono de voz
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                  {[['professional', 'Profesional'], ['playful', 'Amigable'], ['academic', 'Académico']].map(([v, l]) => (
+                    <button key={v} className={`chip ${settings.tone === v ? 'chip-active' : 'chip-inactive'}`} onClick={() => setSettings(s => ({ ...s, tone: v }))}>{l}</button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="mood" size={16} /> Emojis
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[['none', 'Ninguno'], ['minimal', 'Mínimo'], ['vibrant', 'Vibrante']].map(([v, l]) => (
+                    <button key={v} className={`chip ${settings.emoji === v ? 'chip-active' : 'chip-inactive'}`} onClick={() => setSettings(s => ({ ...s, emoji: v }))}>{l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Save */}
+            <div className="island fade-up" style={{ padding: '20px 24px', marginTop: 16, background: 'linear-gradient(135deg, var(--primary), var(--primary-dim))', animationDelay: '0.15s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div className="font-headline" style={{ fontSize: 15, fontWeight: 700, color: 'white', marginBottom: 2 }}>Guardar configuración</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Se aplicará a todas las generaciones futuras.</div>
+                </div>
+                <button onClick={save} style={{ padding: '10px 22px', background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 10, color: 'white', fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', gap: 6 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}>
+                  {saved ? <><Icon name="check" size={15} /> Guardado</> : <><Icon name="save" size={15} /> Guardar</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── App root ───────────────────────────────────────────────────────────────
+    function App() {
+      const [page, setPage] = useState('new');
+      const [result, setResult] = useState(null);
+      const [settings, setSettings] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gitdocs_settings')) || {}; } catch { return {}; }
+      });
+      const [history, setHistory] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gitdocs_history')) || []; } catch { return []; }
+      });
+
+      const defaultSettings = { length: 'balanced', tone: 'professional', emoji: 'minimal', template: 'standard', language: 'en', model: 'claude', includeLicense: true, includeBadges: true, includeContributing: true };
+      const mergedSettings = { ...defaultSettings, ...settings };
+
+      useEffect(() => { localStorage.setItem('gitdocs_settings', JSON.stringify(mergedSettings)); }, [settings]);
+      useEffect(() => { localStorage.setItem('gitdocs_history', JSON.stringify(history)); }, [history]);
+
+      const handleResult = (res) => { setResult(res); setPage('result'); };
+
+      const saveToHistory = (item) => {
+        setHistory(h => { const exists = h.find(x => x.timestamp === item.timestamp); return exists ? h : [...h, item]; });
+      };
+
+      const handleTemplateSelect = (templateId) => {
+        setSettings(s => ({ ...s, template: templateId }));
+        setPage('new');
+      };
+
+      return (
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+          <Sidebar page={page === 'result' ? 'new' : page} setPage={(p) => { setPage(p); if (p !== 'result') setResult(null); }} history={history} />
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+            {/* Top bar */}
+            <header style={{ padding: '0 32px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(248,250,252,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--surface-high)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="font-headline" style={{ fontSize: 15, fontWeight: 700, color: 'var(--on-surface)' }}>
+                  {{ new: 'Nuevo README', result: 'README Generado', history: 'Historial', templates: 'Plantillas', settings: 'Configuración' }[page]}
+                </span>
+                {page === 'result' && result && <span className="badge badge-green">Generado</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {page === 'new' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'rgba(99,102,241,0.08)', borderRadius: 9999, fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
+                    <Icon name="auto_awesome" size={14} /> Powered by Claude AI
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {/* Page content */}
+            {page === 'new' && <NewReadme settings={mergedSettings} onResult={handleResult} onNavigate={setPage} />}
+            {page === 'result' && result && <ResultScreen result={result} onBack={() => setPage('new')} onSave={saveToHistory} />}
+            {page === 'history' && <HistoryScreen history={history} onOpen={(item) => { setResult(item); setPage('result'); }} onClear={() => setHistory([])} />}
+            {page === 'templates' && <TemplatesScreen onSelectTemplate={handleTemplateSelect} />}
+            {page === 'settings' && <SettingsScreen settings={mergedSettings} setSettings={setSettings} />}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>
