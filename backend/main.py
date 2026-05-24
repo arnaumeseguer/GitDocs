@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from google import genai as google_genai
 from groq import Groq
 import anthropic
+import asyncio
 import json
 import os
 import requests
@@ -213,6 +215,9 @@ _strategies = {
     "claude": ClaudeStrategy(anthropic_client),
 }
 
+# Fallback chain: if the primary fails, try these models in order
+_FALLBACK_ORDER = ["gemini", "groq", "claude"]
+
 GITHUB_HEADERS = {
     "Accept": "application/vnd.github+json",
     **({"Authorization": f"Bearer {github_token}"} if github_token else {}),
@@ -275,6 +280,37 @@ class GenerateRequest(BaseModel):
     langData: dict = {}
     settings: dict = {}
     ai_model: str = "groq"
+
+
+@app.post("/api/generate/stream")
+async def generate_stream(req: GenerateRequest):
+    primary = "groq" if req.ai_model == "grok" else req.ai_model
+    chain = [primary] + [m for m in _FALLBACK_ORDER if m != primary]
+
+    async def event_stream():
+        last_error = None
+        for model_name in chain:
+            strategy = _strategies.get(model_name)
+            if strategy is None:
+                continue
+            yield f'data: {json.dumps({"type": "trying", "ai": model_name})}\n\n'
+            try:
+                result = await asyncio.to_thread(strategy.generate, req.prompt)
+                if "readme" not in result:
+                    raise ValueError("La IA no ha retornat el camp 'readme'.")
+                yield f'data: {json.dumps({"type": "done", "readme": result["readme"], "used_ai": model_name, "was_fallback": model_name != primary})}\n\n'
+                return
+            except Exception as exc:
+                last_error = str(exc)
+                yield f'data: {json.dumps({"type": "fallback", "from_ai": model_name, "error": last_error})}\n\n'
+
+        yield f'data: {json.dumps({"type": "error", "message": last_error or "Tots els models han fallat."})}\n\n'
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/api/generate")
