@@ -45,7 +45,7 @@ class _GitDocsAppState extends State<GitDocsApp> {
               path: '/',
               builder: (ctx, state) => NewReadmeScreen(
                 settings: _settings,
-                onResult: (readme, repoData, langData, settings, url, aiModel) async {
+                onResult: (readme, repoData, langData, settings, url, aiModel, wasFallback) async {
                   final item = HistoryItem(
                     readme: readme,
                     repoData: repoData,
@@ -54,6 +54,7 @@ class _GitDocsAppState extends State<GitDocsApp> {
                     url: url,
                     timestamp: DateTime.now().millisecondsSinceEpoch,
                     aiModel: aiModel,
+                    wasFallback: wasFallback,
                   );
                   setState(() => _result = item);
                   ctx.go('/result');
@@ -203,16 +204,33 @@ class _GitDocsAppState extends State<GitDocsApp> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 9, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: kAccent.withValues(alpha: 0.08),
+                                    color: (_result!.wasFallback
+                                            ? const Color(0xFFF59E0B)
+                                            : kAccent)
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
-                                  child: Text(
-                                      _modelLabel(_result!.aiModel),
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: kAccent,
-                                          letterSpacing: 0.8)),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_result!.wasFallback)
+                                        Icon(Icons.swap_horiz, size: 11,
+                                            color: const Color(0xFFF59E0B)),
+                                      if (_result!.wasFallback)
+                                        const SizedBox(width: 3),
+                                      Text(
+                                          _result!.wasFallback
+                                              ? 'Fallback: ${_modelLabel(_result!.aiModel)}'
+                                              : _modelLabel(_result!.aiModel),
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: _result!.wasFallback
+                                                  ? const Color(0xFFF59E0B)
+                                                  : kAccent,
+                                              letterSpacing: 0.8)),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ],

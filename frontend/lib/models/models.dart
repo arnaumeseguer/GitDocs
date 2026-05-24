@@ -106,6 +106,7 @@ class HistoryItem {
   final String url;
   final int timestamp;
   final String aiModel;
+  final bool wasFallback;
 
   const HistoryItem({
     required this.readme,
@@ -115,6 +116,7 @@ class HistoryItem {
     required this.url,
     required this.timestamp,
     this.aiModel = 'gemini',
+    this.wasFallback = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -125,6 +127,7 @@ class HistoryItem {
         'url': url,
         'timestamp': timestamp,
         'aiModel': aiModel,
+        'wasFallback': wasFallback,
       };
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) => HistoryItem(
@@ -136,6 +139,7 @@ class HistoryItem {
         url: json['url'] ?? '',
         timestamp: json['timestamp'] ?? 0,
         aiModel: json['aiModel'] ?? 'gemini',
+        wasFallback: json['wasFallback'] ?? false,
       );
 }
 

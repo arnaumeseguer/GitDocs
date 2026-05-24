@@ -15,7 +15,8 @@ class NewReadmeScreen extends StatefulWidget {
       Map<String, dynamic> langData,
       AppSettings settings,
       String url,
-      String aiModel) onResult;
+      String aiModel,
+      bool wasFallback) onResult;
 
   const NewReadmeScreen(
       {super.key, required this.settings, required this.onResult});
@@ -74,7 +75,7 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
     final name = file.name.endsWith('.md')
         ? file.name.substring(0, file.name.length - 3)
         : file.name;
-    await widget.onResult(content, {'full_name': name}, {}, _local, file.name, 'none');
+    await widget.onResult(content, {'full_name': name}, {}, _local, file.name, 'none', false);
   }
 
   Future<void> _generate() async {
@@ -140,7 +141,7 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
       }
 
       await widget.onResult(
-          readme!, repoData, langData, _local, _urlCtrl.text, modelUsed!);
+          readme!, repoData, langData, _local, _urlCtrl.text, modelUsed!, modelUsed != _aiModel);
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {

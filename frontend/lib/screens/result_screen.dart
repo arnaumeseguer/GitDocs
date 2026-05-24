@@ -90,7 +90,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                 style: const TextStyle(
                                     fontSize: 12, color: kOnSurfaceMuted)),
                             const SizedBox(width: 8),
-                            _modelBadge(r.aiModel),
+                            _modelBadge(r.aiModel, r.wasFallback),
                           ],
                         ),
                       ],
@@ -287,21 +287,33 @@ class _ResultScreenState extends State<ResultScreen> {
                 color: kAccent,
                 letterSpacing: 0.8)));
 
-  Widget _modelBadge(String model) {
+  Widget _modelBadge(String model, bool wasFallback) {
     const labels = {'gemini': 'Gemini', 'grok': 'Grok', 'claude': 'Claude'};
-    final label = labels[model] ?? model;
+    final name = labels[model] ?? model;
+    final color = wasFallback ? const Color(0xFFF59E0B) : kAccent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: kAccent.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: kAccent,
-              letterSpacing: 0.6)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(wasFallback ? Icons.swap_horiz : Icons.auto_awesome,
+              size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            wasFallback ? 'Fallback: $name' : '$name · Principal',
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.6),
+          ),
+        ],
+      ),
     );
   }
 
