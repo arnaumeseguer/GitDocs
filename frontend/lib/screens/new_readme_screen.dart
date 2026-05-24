@@ -79,6 +79,16 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
         content, {'full_name': name}, {}, _local, file.name, {});
   }
 
+  String _aiModelName(String? model) {
+    switch (model) {
+      case 'gemini': return 'Gemini';
+      case 'groq': return 'Groq';
+      case 'grok': return 'Groq';
+      case 'claude': return 'Claude';
+      default: return model ?? 'IA';
+    }
+  }
+
   Future<void> _generate() async {
     final s = StringsProvider.of(context);
     setState(() => _error = '');
@@ -105,7 +115,7 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
       final existingReadme =
           await ApiService.fetchReadme(parsed['owner']!, parsed['repo']!);
 
-      setState(() => _loadMsg = s.get('loading_ai'));
+      setState(() => _loadMsg = 'Generant amb ${_aiModelName(_aiModel)}…');
 
       final prompt = ApiService.buildPrompt(
         repoData: repoData,
@@ -115,17 +125,36 @@ class _NewReadmeScreenState extends State<NewReadmeScreen> {
         settings: _local,
       );
 
-      final aiResponse = await ApiService.generateReadme(
+      Map<String, dynamic>? finalResult;
+
+      await for (final event in ApiService.generateReadmeStream(
         prompt: prompt,
         repoData: repoData,
         langData: langData,
         settings: _local,
         aiModel: _aiModel,
-      );
+      )) {
+        if (!mounted) break;
+        switch (event['type'] as String?) {
+          case 'trying':
+            setState(() => _loadMsg = 'Generant amb ${_aiModelName(event['ai'] as String?)}…');
+            break;
+          case 'fallback':
+            setState(() => _loadMsg = '${_aiModelName(event['from_ai'] as String?)} ha fallat, provant la següent IA…');
+            break;
+          case 'done':
+            finalResult = event;
+            break;
+          case 'error':
+            throw Exception(event['message'] as String? ?? 'Error desconegut');
+        }
+      }
 
-      final readme = aiResponse['readme'] as String;
+      if (finalResult == null) throw Exception('No s\'ha rebut cap resposta de la IA.');
+
+      final readme = finalResult['readme'] as String;
       await widget.onResult(
-          readme, repoData, langData, _local, _urlCtrl.text, aiResponse);
+          readme, repoData, langData, _local, _urlCtrl.text, finalResult);
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {

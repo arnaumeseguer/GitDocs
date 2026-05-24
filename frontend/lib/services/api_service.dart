@@ -61,6 +61,73 @@ class ApiService {
     return '';
   }
 
+  static Stream<Map<String, dynamic>> generateReadmeStream({
+    required String prompt,
+    required Map<String, dynamic> repoData,
+    required Map<String, dynamic> langData,
+    required AppSettings settings,
+    required String aiModel,
+  }) async* {
+    final client = http.Client();
+    try {
+      final request = http.Request(
+        'POST',
+        Uri.parse('$_backendUrl/api/generate/stream'),
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'prompt': prompt,
+        'repoData': repoData,
+        'langData': langData,
+        'settings': settings.toJson(),
+        'ai_model': aiModel,
+      });
+
+      final response = await client.send(request);
+
+      if (response.statusCode != 200) {
+        final body = await response.stream.bytesToString();
+        try {
+          final parsed = jsonDecode(body);
+          throw Exception(parsed['detail'] ?? 'API error ${response.statusCode}');
+        } catch (_) {
+          throw Exception('API error ${response.statusCode}');
+        }
+      }
+
+      // Buffer to accumulate partial SSE data across chunks
+      final buffer = StringBuffer();
+      await for (final chunk in response.stream.transform(utf8.decoder)) {
+        buffer.write(chunk);
+        String text = buffer.toString();
+        buffer.clear();
+
+        // SSE events are separated by double newline
+        while (true) {
+          final sep = text.indexOf('\n\n');
+          if (sep == -1) break;
+          final block = text.substring(0, sep);
+          text = text.substring(sep + 2);
+
+          for (final line in block.split('\n')) {
+            if (line.startsWith('data: ')) {
+              final jsonStr = line.substring(6).trim();
+              if (jsonStr.isNotEmpty) {
+                try {
+                  yield jsonDecode(jsonStr) as Map<String, dynamic>;
+                } catch (_) {}
+              }
+            }
+          }
+        }
+        // Keep any incomplete block for the next chunk
+        buffer.write(text);
+      }
+    } finally {
+      client.close();
+    }
+  }
+
   static Future<Map<String, dynamic>> generateReadme({
     required String prompt,
     required Map<String, dynamic> repoData,

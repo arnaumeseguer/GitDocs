@@ -91,13 +91,25 @@ class _ResultScreenState extends State<ResultScreen> {
                         Text(r.repoData['full_name'] ?? 'README',
                             style: headline(size: 20),
                             overflow: TextOverflow.ellipsis),
-                        Text(
-                            DateTime.fromMillisecondsSinceEpoch(r.timestamp)
-                                .toLocal()
-                                .toString()
-                                .substring(0, 16),
-                            style: const TextStyle(
-                                fontSize: 12, color: kOnSurfaceMuted)),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                                DateTime.fromMillisecondsSinceEpoch(r.timestamp)
+                                    .toLocal()
+                                    .toString()
+                                    .substring(0, 16),
+                                style: const TextStyle(
+                                    fontSize: 12, color: kOnSurfaceMuted)),
+                            if (r.aiMeta['used_ai'] != null) ...[
+                              const SizedBox(width: 8),
+                              _AiBadge(
+                                usedAi: r.aiMeta['used_ai'] as String,
+                                wasFallback: r.aiMeta['was_fallback'] == true,
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -363,6 +375,55 @@ class _ResultScreenState extends State<ResultScreen> {
           side: const BorderSide(color: kSurfaceHigh),
         ),
       );
+}
+
+// ── AI badge ──────────────────────────────────────────────────────────────────
+
+class _AiBadge extends StatelessWidget {
+  final String usedAi;
+  final bool wasFallback;
+
+  const _AiBadge({required this.usedAi, required this.wasFallback});
+
+  static String _displayName(String id) {
+    switch (id) {
+      case 'gemini': return 'Gemini';
+      case 'groq': return 'Groq';
+      case 'grok': return 'Groq';
+      case 'claude': return 'Claude';
+      default: return id;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _displayName(usedAi);
+    final color = wasFallback ? const Color(0xFFF59E0B) : kAccent;
+    final icon = wasFallback ? Icons.swap_horiz : Icons.auto_awesome;
+    final label = wasFallback ? 'Fallback: $name' : name;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  letterSpacing: 0.5)),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Code block builder ────────────────────────────────────────────────────────
